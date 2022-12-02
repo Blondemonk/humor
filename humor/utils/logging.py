@@ -1,6 +1,17 @@
 
 import os, re, datetime, shutil
 
+import errno
+# have to monkey patch to work with WSL as workaround for https://bugs.python.org/issue38633
+orig_copyxattr = shutil._copyxattr
+def patched_copyxattr(src, dst, *, follow_symlinks=True):
+	try:
+		orig_copyxattr(src, dst, follow_symlinks=follow_symlinks)
+	except OSError as ex:
+		if ex.errno != errno.EACCES: raise
+shutil._copyxattr = patched_copyxattr
+
+
 class Logger(object):
     '''
     "Static" class to handle logging.
@@ -44,4 +55,5 @@ def cp_files(dir_out, file_list):
         print('Cannot copy to nonexistent directory ' + dir_out)
         return
     for f in file_list:
+        print(f, dir_out)
         shutil.copy(f, dir_out)
